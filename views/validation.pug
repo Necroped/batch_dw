@@ -1,0 +1,25 @@
+doctype html
+html
+  head
+    title Batch
+    |     
+    style.
+      a {text-decoration: none; color: black;}
+  body
+    h1 Batch
+    |     
+    hr
+    |
+    form(action='/validation', method='post')
+      - var i = 0
+      each val in result
+        div 
+        p #{val.file}
+        each line in val.data
+          - i++
+          input(type="checkbox", name="validations", value=i, checked)
+          span #{line.line_number} : #{line.line_content}
+          br
+        br
+      |
+      button(type="submit") PROCESS
