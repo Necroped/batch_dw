@@ -1,0 +1,21 @@
+doctype html
+html
+  head
+    title Batch
+    |
+    style.
+      a {text-decoration: none; color: black;}
+  body
+    h1 Batch
+    |
+    hr
+    |
+    each val in data
+        div
+        p #{val.file}
+        each line in val.line
+            span #{line.number} : #{line.content}
+            br
+        br
+    |
+    button(type="submit") PROCESS
