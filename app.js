@@ -4,8 +4,9 @@ app                = express();
 session            = require('cookie-session'),
 bodyParser         = require('body-parser'),
 urlencodedParser   = bodyParser.urlencoded({ 
-    extended       : false,
-    parameterLimit : 1000000 // experiment with this parameter and tweak
+    extended       : true,
+    limit          : "50mb", // experiment with this parameter and tweak
+    parameterLimit : 50000
 }),
 fs                 = require('fs'),
 async              = require('async'),
@@ -62,12 +63,6 @@ app
 .set('view engine', 'pug')
 
 .use(express.static(path.join(__dirname, 'public')))
-
-.get('/config', (req, res) => { 
-    res.render('config', {
-        config: _config
-    });
-})
 
 .get('/type', (req, res) => {
     let 
@@ -136,7 +131,7 @@ app
         try {
             let
                 flags                    = req.body.extensionsAllowed.replace(/.*\/([gimy]*)$/, '$1'),
-                pattern                  = req.body.extensionsAllowed.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1'),
+                pattern                  = req.body.extensionsAllowed.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1'),
                 regex                    = new RegExp(pattern, flags);
                 _config.extensionsAllowed = regex;
         } catch(e) {
@@ -227,7 +222,7 @@ app
 })
 
 .use((req, res, next) => {
-    res.redirect('/config');
+    res.redirect('/type');
 })
 
 .listen(7777, () => {
