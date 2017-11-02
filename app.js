@@ -18,9 +18,8 @@ let
 
 
 const getFileContent = (file, regexp) => {
-    let 
-        currentLine = 0;
-
+    let currentLine = 0;
+    
     fs.readFileSync(file).toString().split('\n').forEach((line) => { 
         currentLine++;
         if(line.match(regexp)) {
@@ -70,7 +69,7 @@ app
     });
 })
 
-.get('/validation', (req, res) => {
+.get('/type', (req, res) => {
     let 
         result    = [],
         filesList = getFiles(_config.directory_path, _config.extensionsAllowed),
@@ -83,8 +82,9 @@ app
         getFileContent(file, _config.regexp);
     }
     
-    res.render('validation', {
-        data: _data
+    res.render('type', {
+        data: _data,
+        config : _config
     });
 })
 
@@ -96,79 +96,98 @@ app
 
 .post('/config', urlencodedParser, (req, res) => {
     let 
-    errors  = {},
-    isError = false;
+        errors  = {},
+        isError = false;
     
     if (req.body.directory_path && req.body.directory_path.length > 0) {
         _config.directory_path = req.body.directory_path;
     }
+
     if (req.body.regexp && req.body.regexp.length > 0) {
         try {
             let 
-            flags          = req.body.regexp.replace(/.*\/([gimy]*)$/, '$1'),
-            pattern        = req.body.regexp.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1'),
-            regex          = new RegExp(pattern, flags);
-            _config.regexp = regex;
+                flags          = req.body.regexp.replace(/.*\/([gimy]*)$/, '$1'),
+                pattern        = req.body.regexp.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1'),
+                regex          = new RegExp(pattern, flags);
+                _config.regexp = regex;
         } catch(e) {
             isError          = true;
             errors['regexp'] = "Regexp not correct";
         }
     }
-    _config.enableLogs = (req.body.enableLogs ? true : false);
+
+    _config.enableLogs = req.body.enableLogs ? req.body.enableLogs : false;
+
     if (req.body.logFile && req.body.logFile.length > 0 && _config.enableLogs == true) {
         _config.logFile = req.body.logFile;
         fs.open( _config.logFile,'r',(err, fd) => {
             if (err) {
-                fs.writeFile(filename, '', (err) => {
+                fs.writeFile(_config.logFile, '', (err) => {
                     if(err) {
                         isError           = true;
                         errors['logFile'] = 'Error while creating the file : ' + err;
                     }
-                });
+                })
             }
-        });
-        
+        })
     }
+
     if (req.body.extensionsAllowed) {
         try {
             let
-            flags                    = req.body.extensionsAllowed.replace(/.*\/([gimy]*)$/, '$1'),
-            pattern                  = req.body.extensionsAllowed.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1'),
-            regex                    = new RegExp(pattern, flags);
-            _config.extensionsAllowed = regex;
+                flags                    = req.body.extensionsAllowed.replace(/.*\/([gimy]*)$/, '$1'),
+                pattern                  = req.body.extensionsAllowed.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1'),
+                regex                    = new RegExp(pattern, flags);
+                _config.extensionsAllowed = regex;
         } catch(e) {
             isError                     = true;
             errors['extensionsAllowed'] = "Regexp not correct";
         }
     }
+
+    if (JSON.parse(req.body.save) == true) {
+        fs.writeFile("./config.js", `module.exports = {` +
+            `\n   directory_path: "${_config.directory_path.replace(/\\/g, "\\\\")}",` + 
+            `\n   regexp : ${_config.regexp},` + 
+            `\n   logFile : "${_config.logFile.replace(/\\/g, "\\\\")}",` + 
+            `\n   extensionsAllowed : ${_config.extensionsAllowed},` +
+            `\n   enableLogs : ${_config.enableLogs}` + 
+        `\n}`, (err) => {
+            if (err) {
+                isError = true;
+                errors['logFile'] = 'Error while creating the file : ' + err;
+            }
+        })
+    }
+
     if(isError) {
-        res.render('config', {
+        res.status(400).json({
             config: {
-                directory_path    : req.body.directory_path,
+                directory_path    : req.body.directory_path.replace(/\\\\/g, "\\"),
                 regexp            : req.body.regexp,
-                logFile           : req.body.logFile,
+                logFile           : req.body.logFile.replace(/\\\\/g, "\\"),
                 extensionsAllowed : req.body.extensionsAllowed,
-                enableLogs        : req.body.enableLogs ? true : false
-            }, 
+                enableLogs        : req.body.enableLogs
+            },
             error : errors
         });
     } else {
-        res.redirect('validation');
+        res.status(200).json({
+            config: _config
+        });
     }
 })
 
-.post('/validation', urlencodedParser, (req, res) => {
-    let 
-    f, 
-    l,
-    _data_length = _data.length,
-    line_length  = 0
-    iteration    = 0;
+.post('/type', urlencodedParser, (req, res) => {
+    let f, l,
+        _data_length = _data.length,
+        line_length  = 0
+        iteration    = 0;
     for(f = 0; f < _data_length; f++) {
         line_length = _data[f].line.length
         for(l = 0; l < line_length; l++) {
             iteration++;
-            if(req.body.validations.indexOf("" + iteration) == -1) {
+            if(req.body.types.indexOf("" + iteration) == -1) {
                 _data[f].line.splice(l, 1);
                 line_length--;
                 l--;
@@ -181,13 +200,9 @@ app
         }
     }
     if(_config.enableLogs == "true" && _config.logFile) {
-        const 
-            logStream = fs.createWriteStream(_config.logFile, {'flags': 'w'});
-        let
-            file,
-            line;
+        const logStream = fs.createWriteStream(_config.logFile, {'flags': 'w'});
+        let file, line;
         for (file of _data) {
-            
             logStream.write(file.file);
             for(line of file.line) {
                 logStream.write('\n\t'); 

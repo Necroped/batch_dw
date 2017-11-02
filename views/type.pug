@@ -1,0 +1,93 @@
+doctype html
+html
+  head
+    title Type
+    |     
+    link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css", integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7", crossorigin="anonymous")
+    link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css", integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r", crossorigin="anonymous")
+    link(rel="stylesheet", href="css/style.css")
+    script(src="https://code.jquery.com/jquery-2.2.4.js", integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=", crossorigin="anonymous")
+    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js", integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS", crossorigin="anonymous")    
+  
+  body
+    .container-fluid
+      .row
+        .col-md-10
+          h3
+            | TYPES
+          
+          .material-switch
+            input#allCheckboxes(type="checkbox" checked="checked") 
+            label.label-info(for="allCheckboxes")
+            span(style="margin-left:50px") Appliquer à tous
+          br
+        .col-md-2
+          a#modal-config.btn.btn-block.btn-lg.btn-primary(type="button" href="#modal-container-config" role="button" data-toggle="modal" style="text-align:center") Config
+          #modal-container-config.modal.fade(role="dialog" aria-labelledby="myModalLabel" aria-hidden="true")
+            .modal-dialog
+              .modal-content
+                .modal-header
+                  button.close(type="button" data-dismiss="modal" aria-hidden="true")
+                    | ×
+                  h4#myModalLabel.modal-title
+                    | CONFIG
+                .modal-body
+                  .form-group
+                    label(for="directory_path") Directory_path
+                    input#directory_path.form-control(type="text" value=config.directory_path.toString()) 
+                  br
+                  .form-group
+                    label(for="regexp") Regexp
+                    input#regexp.form-control(type="text" value=config.regexp.toString()) 
+                  br
+                  .form-group
+                    label(for="extensionsAllowed") ExtensionsAllowed
+                    input#extensionsAllowed.form-control(type="text" value=config.extensionsAllowed.toString()) 
+                  br
+                  .form-group
+                    label(for="enableLogs") EnableLogs
+                    .material-switch.pull-right
+                      input#enableLogs(type="checkbox" checked=config.enableLogs) 
+                      label.label-info(for="enableLogs")
+                  br
+                  - var display = config.enableLogs ? "block" : "none"
+                  #logFileDiv.form-group(style="display :" + display)
+                    label(for="logFile") LogFile
+                    input#logFile.form-control(type="text" value=config.logFile.toString()) 
+                  br
+                .modal-footer
+                  button#modal-button-close.btn.btn-danger(type="button" data-dismiss="modal")
+                    | Close
+                  button#modal-button-apply.btn.btn-success(type="button")
+                    | Apply
+                  button#modal-button-save.btn.btn-info(type="button")
+                    | Save changes
+      form(action='/type', method='post')
+        .row
+          .col-md-12
+            #panel.panel-group
+              - var idFile = 0
+              - var num_checkbox = 0
+              each val in data
+                - idFile++
+                .panel.panel-default
+                  .panel-heading
+                    .material-switch.pull-left
+                      input(type="checkbox" checked='checked' id="checkboxFile_" + idFile) 
+                      label.label-info(for="checkboxFile_" + idFile)
+                    a.panel-title.collapsed(data-toggle="collapse" data-parent="#panel" href="#panel-element-" + idFile style="margin-left:50px") #{val.file}
+                  .panel-collapse.collapse(id="panel-element-" + idFile)
+                    each line in val.line
+                      - num_checkbox++
+                      .panel-body   
+                        .col-sm-1
+                            .material-switch.pull-right
+                              input(data-checkboxFile="checkboxFile_" + idFile type="checkbox" value=num_checkbox name="types" checked='checked' id="checkboxLine_" + idFile + "_" + num_checkbox ) 
+                              label.label-info(for="checkboxLine_" + idFile + "_" + num_checkbox )
+                        .col-sm-1 #{line.number}
+                        .col-sm-10 #{line.content}
+      div.process_container
+        button.btn.btn-lg.btn-block.btn-success(type="submit")
+          | Process
+    span#errors
+    script(src="js/validation.js")
